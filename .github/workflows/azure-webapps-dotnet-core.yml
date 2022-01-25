@@ -53,20 +53,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: Restore dependencies
-        run: dotnet restore
-
       - name: Build with dotnet
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Release
 
       - name: dotnet publish
         run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
-
-      - name: echo
-        run: echo ${{env.DOTNET_ROOT}}
-
-      - name: list
-        run: ls -R
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v2
