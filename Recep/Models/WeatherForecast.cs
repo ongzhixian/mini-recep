@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Recep;
+namespace Recep.Models;
 
 [ExcludeFromCodeCoverage]
 public class WeatherForecast

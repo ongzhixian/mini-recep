@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Recep.Controllers;
+using Recep.Models;
 using System.Collections.Generic;
 
 namespace Recep.Tests;

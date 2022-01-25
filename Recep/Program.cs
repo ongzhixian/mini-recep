@@ -1,26 +1,18 @@
+using Recep.Services;
 using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.ConfigureKestrel(options =>
-{
-    // Not all KestrelServerOptions can be configured from appsettings.json
-    // Unfortunately, AddServerHeader is one of them.
-    // The rationale is that KestrelServerOptions configurable from appsettings.json
-    // are settings that makes more sense to be configured during runtime.
-    options.AddServerHeader = false;
-});
+AppStartup.ConfigureWebHost(builder.WebHost);
 
-// Add services to the container.
+AppStartup.SetupAuthentication(builder.Configuration, builder.Services);
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+AppStartup.SetupServices(builder.Services);
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -28,6 +20,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
@@ -40,5 +34,10 @@ app.Map("/", (context) =>
     return Task.CompletedTask;
 });
 
+app.Map("/favicon.ico", (context) =>
+{
+    context.Response.StatusCode = (int)HttpStatusCode.NoContent;
+    return Task.CompletedTask;
+});
 
 app.Run();
