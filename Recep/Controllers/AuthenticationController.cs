@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Mini.Common.Requests;
 using Mini.Common.Responses;
+using Mini.Common.Settings;
+using Recep.Extensions;
+using Recep.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -16,73 +19,66 @@ namespace Recep.Controllers;
 [ApiController]
 public class AuthenticationController : ControllerBase
 {
-    // GET: api/<AuthenticationController>
-    [HttpGet]
-    public IEnumerable<string> Get()
-    {
-        return new string[] { "value1", "value2" };
-    }
+    private readonly IOptionsMonitor<JwtSetting> jwtOptions;
+    private readonly ApplicationSetting applicationSetting;
 
-    // GET api/<AuthenticationController>/5
-    [HttpGet("{id}")]
-    public string Get(int id)
+    public AuthenticationController(IOptionsMonitor<JwtSetting> jwtOptionsMonitor,
+        IOptions<ApplicationSetting> applicationSettingOptions)
     {
-        return "value";
+        jwtOptions = jwtOptionsMonitor;
+
+        applicationSetting = applicationSettingOptions.Value;
     }
 
     // POST api/<AuthenticationController>
     [HttpPost]
     public OkObjectResult Post([FromBody] LoginRequest value)
     {
-        // 
+        // Get Issuer and Audience
+
+        var jwtSetting = jwtOptions.Get("Conso");
+        jwtSetting.EnsureIsValid();
 
         // Setup claims
 
-        var authClaims = new List<Claim>();
+        List<Claim>? authClaims = new()
+        {
+            // JwtRegisteredClaimNames contains a list of valid Jwt claim names
 
-        //authClaims.Add(new Claim(ClaimTypes.Name, op.Payload.Username));
-        //authClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
+            new Claim(ClaimTypes.Name, value.Username),
+            new Claim(ClaimTypes.Role, "Admin"),
+            new Claim(ClaimTypes.Role, "Developer"),
+            new Claim(ClaimTypes.Role, "Tester")
+        };
 
-        //foreach (var userRole in userRoles)
-        //    authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+        string secretKey = EnvironmentHelper.GetVariable(applicationSetting.Name);
 
-        string issuer = "https://localhost:7001/";
-        string audience = "https://localhost:7001/";
-        string secretKey = "secret09172301287";
+        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey);
 
+        JwtSecurityTokenHandler? jwtSecurityTokenHandler = new();
 
-        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-
-        JwtSecurityToken token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            expires: DateTime.Now.AddHours(3),
-            claims: authClaims,
-            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+        var jwtSecurityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(
+            issuer: jwtSetting.Issuer,
+            audience: jwtSetting.Audience,
+            subject: new ClaimsIdentity(authClaims),
+            notBefore: DateTime.UtcNow,
+            expires: DateTime.UtcNow.AddHours(jwtSetting.ExpirationMinutes),
+            issuedAt: DateTime.UtcNow,
+            signingCredentials: new SigningCredentials(scKey, SecurityAlgorithms.HmacSha256, SecurityAlgorithms.Sha256Digest),
+            encryptingCredentials: new EncryptingCredentials(ecKey, SecurityAlgorithms.Aes256KW, SecurityAlgorithms.Aes256CbcHmacSha512)
             );
 
+        // For a list algorithms applicable to tokens see
+        // See: https://datatracker.ietf.org/doc/html/rfc7518
+        // 
 
-        var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-
-        var res = new LoginResponse
+        LoginResponse? res = new()
         {
-            Jwt = jwtSecurityTokenHandler.WriteToken(token),
-            ExpiryDateTime = token.ValidTo
+            Jwt = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken),
+            ExpiryDateTime = jwtSecurityToken.ValidTo
         };
 
         return Ok(res);
 
-    }
-
-    // PUT api/<AuthenticationController>/5
-    [HttpPut("{id}")]
-    public void Put(int id, [FromBody] string value)
-    {
-    }
-
-    // DELETE api/<AuthenticationController>/5
-    [HttpDelete("{id}")]
-    public void Delete(int id)
-    {
     }
 }

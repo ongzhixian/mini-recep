@@ -5,7 +5,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 AppStartup.ConfigureWebHost(builder.WebHost);
 
+AppStartup.SetupOptions(builder.Configuration, builder.Services);
+
 AppStartup.SetupAuthentication(builder.Configuration, builder.Services);
+
+AppStartup.SetupAuthorization(builder.Services);
 
 AppStartup.SetupServices(builder.Services);
 

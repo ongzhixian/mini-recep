@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
@@ -11,13 +11,14 @@
   "profiles": {
     "Recep": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:7278;http://localhost:5070",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "RECEP": "SOME_SALT|SOME_PASSWORD|11970|16180"
+      },
+      "applicationUrl": "https://localhost:7278;http://localhost:5070",
+      "dotnetRunMessages": true
     },
     "IIS Express": {
       "commandName": "IISExpress",
