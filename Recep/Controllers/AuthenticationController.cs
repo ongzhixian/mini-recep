@@ -62,7 +62,7 @@ public class AuthenticationController : ControllerBase
             audience: jwtSetting.Audience,
             subject: new ClaimsIdentity(authClaims),
             notBefore: DateTime.UtcNow,
-            expires: DateTime.UtcNow.AddHours(jwtSetting.ExpirationMinutes),
+            expires: DateTime.UtcNow.AddMinutes(jwtSetting.ExpirationMinutes),
             issuedAt: DateTime.UtcNow,
             signingCredentials: new SigningCredentials(scKey, SecurityAlgorithms.HmacSha256, SecurityAlgorithms.Sha256Digest),
             encryptingCredentials: new EncryptingCredentials(ecKey, SecurityAlgorithms.Aes256KW, SecurityAlgorithms.Aes256CbcHmacSha512)
