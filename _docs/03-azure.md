@@ -50,8 +50,11 @@ This is the more generic method.
 3.  Set up Github Actions
 
 
+## Troubleshooting
 
-
+If your application cannot start up, (500.30), 
+try running the site via kudu debug shell (PowerShell / CMD).
+In `..site\wwwroot` run `dotnet .\Recep.dll` 
 
 
 # Reference
