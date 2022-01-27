@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using System.Diagnostics.CodeAnalysis;
-using Recep.Extensions;
 using Mini.Common.Settings;
+using Mini.Common.Helpers;
+using Mini.Common.Extensions;
+using System.Security.Cryptography;
 
 namespace Recep.Services;
 
@@ -37,7 +39,7 @@ static internal class AppStartup
 
         string secretKey = EnvironmentHelper.GetVariable(applicationSetting.Name);
 
-        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey);
+        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey, HashAlgorithmName.SHA256);
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {

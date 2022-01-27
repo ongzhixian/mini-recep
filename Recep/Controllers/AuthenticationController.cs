@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Mini.Common.Helpers;
 using Mini.Common.Requests;
 using Mini.Common.Responses;
 using Mini.Common.Settings;
@@ -9,6 +10,7 @@ using Recep.Extensions;
 using Recep.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -53,7 +55,7 @@ public class AuthenticationController : ControllerBase
 
         string secretKey = EnvironmentHelper.GetVariable(applicationSetting.Name);
 
-        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey);
+        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey, HashAlgorithmName.SHA256);
 
         JwtSecurityTokenHandler? jwtSecurityTokenHandler = new();
 
