@@ -3,7 +3,6 @@ using Recep.Models;
 
 namespace Recep.Controllers;
 
-//[Authorize("Bearer")]
 [ApiController]
 [Route("[controller]")]
 public class WeatherForecastController : ControllerBase
