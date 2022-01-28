@@ -36,12 +36,12 @@ app.Map("/", (context) =>
 {
     context.Response.StatusCode = (int)HttpStatusCode.NoContent;
     return Task.CompletedTask;
-});
+}).AllowAnonymous();
 
 app.Map("/favicon.ico", (context) =>
 {
     context.Response.StatusCode = (int)HttpStatusCode.NoContent;
     return Task.CompletedTask;
-});
+}).AllowAnonymous();
 
 app.Run();
