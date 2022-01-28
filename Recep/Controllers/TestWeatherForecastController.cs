@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Recep.Models;
 
 namespace Recep.Controllers;
 
+[AllowAnonymous]
 [ApiController]
 [Route("[controller]")]
 public class TestWeatherForecastController : ControllerBase
