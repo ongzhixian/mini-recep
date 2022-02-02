@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Recep.Models;
+using System.Diagnostics.CodeAnalysis;
 
-namespace Recep.Controllers;
+namespace Recep.Tests.Controllers;
 
+[ExcludeFromCodeCoverage]
 [AllowAnonymous]
 [ApiController]
 [Route("[controller]")]

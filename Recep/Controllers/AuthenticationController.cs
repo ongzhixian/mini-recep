@@ -9,7 +9,6 @@ using Mini.Common.Settings;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text.Json;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -22,21 +21,31 @@ public class AuthenticationController : ControllerBase
 {
     private readonly IOptionsMonitor<JwtSetting> jwtOptions;
     private readonly ApplicationSetting applicationSetting;
+    private readonly RsaKeySetting rsaSigningKeySetting;
 
-    public AuthenticationController(IOptionsMonitor<JwtSetting> jwtOptionsMonitor,
-        IOptions<ApplicationSetting> applicationSettingOptions)
+    public AuthenticationController(
+        IOptionsMonitor<JwtSetting> jwtOptionsMonitor
+        , IOptions<ApplicationSetting> applicationSettingOptions
+        , IOptions<RsaKeySetting> rsaKeySettingOptions)
     {
         jwtOptions = jwtOptionsMonitor;
 
         applicationSetting = applicationSettingOptions.Value;
+
+        rsaSigningKeySetting = rsaKeySettingOptions.Value;
     }
 
     // POST api/<AuthenticationController>
     [HttpPost]
     public OkObjectResult Post([FromBody] LoginRequest value)
     {
+        LoginResponse response;
 
-        return Rsa(value);
+        SecurityKey signingCredentialSecurityKey;
+        SecurityKey encryptingCredentialSecurityKey;
+
+        JwtSecurityTokenHandler? jwtSecurityTokenHandler = new();
+        JwtSecurityToken? jwtSecurityToken;
 
         // Get Issuer and Audience
 
@@ -54,110 +63,87 @@ public class AuthenticationController : ControllerBase
             new Claim(ClaimTypes.Role, "Developer"),
             new Claim(ClaimTypes.Role, "Tester")
         };
-
-        string secretKey = EnvironmentHelper.GetVariable(applicationSetting.Name);
-
-        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey, HashAlgorithmName.SHA256);
-
-        JwtSecurityTokenHandler? jwtSecurityTokenHandler = new();
-
-        var jwtSecurityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(
-            issuer: jwtSetting.Issuer,
-            audience: jwtSetting.Audience,
-            subject: new ClaimsIdentity(authClaims),
-            notBefore: DateTime.UtcNow,
-            expires: DateTime.UtcNow.AddMinutes(jwtSetting.ExpirationMinutes),
-            issuedAt: DateTime.UtcNow,
-            signingCredentials: new SigningCredentials(scKey, SecurityAlgorithms.HmacSha256, SecurityAlgorithms.Sha256Digest),
-            encryptingCredentials: new EncryptingCredentials(ecKey, SecurityAlgorithms.Aes256KW, SecurityAlgorithms.Aes256CbcHmacSha512)
-            );
-
         
+
+        if (value.Encrypting == null)
+        {
+            // Use Symmetric encryption
+
+            string secretKey = EnvironmentHelper.GetVariable(applicationSetting.Name);
+
+            (signingCredentialSecurityKey, encryptingCredentialSecurityKey) = 
+                SecurityKeyHelper.SymmetricSecurityKey(secretKey, HashAlgorithmName.SHA256);
+
+            jwtSecurityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(
+                issuer: jwtSetting.Issuer,
+                audience: jwtSetting.Audience,
+                subject: new ClaimsIdentity(authClaims),
+                notBefore: DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddMinutes(jwtSetting.ExpirationMinutes),
+                issuedAt: DateTime.UtcNow,
+                signingCredentials: new SigningCredentials(
+                    signingCredentialSecurityKey
+                    , SecurityAlgorithms.HmacSha256
+                    , SecurityAlgorithms.Sha256Digest),
+                encryptingCredentials: new EncryptingCredentials(
+                    encryptingCredentialSecurityKey
+                    , SecurityAlgorithms.Aes256KW
+                    , SecurityAlgorithms.Aes256CbcHmacSha512)
+                );
+
+            response = new()
+            {
+                Jwt = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken),
+                ExpiryDateTime = jwtSecurityToken.ValidTo
+            };
+        }
+        else
+        {
+            // Use Asymmetric encryption
+
+            // Signing key needs to have private key
+            signingCredentialSecurityKey = rsaSigningKeySetting.GetRsaSecurityKey(true);
+
+            var securityCredential = value.Encrypting.Value;
+
+            using RSA encryptingKeyRsa = RSA.Create();
+            
+            encryptingKeyRsa.FromXmlString(securityCredential.Xml);
+
+            encryptingCredentialSecurityKey = new RsaSecurityKey(encryptingKeyRsa);
+
+            jwtSecurityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(
+                issuer: jwtSetting.Issuer,
+                audience: jwtSetting.Audience,
+                subject: new ClaimsIdentity(authClaims),
+                notBefore: DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddMinutes(jwtSetting.ExpirationMinutes),
+                issuedAt: DateTime.UtcNow,
+                signingCredentials: new SigningCredentials(
+                    signingCredentialSecurityKey
+                    , SecurityAlgorithms.RsaSsaPssSha256
+                    , SecurityAlgorithms.RsaSsaPssSha256Signature),
+                encryptingCredentials: new EncryptingCredentials(
+                    encryptingCredentialSecurityKey
+                    , securityCredential.SecurityAlgorithm
+                    , securityCredential.SecurityDigest)
+                );
+
+            response = new()
+            {
+                Jwt = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken),
+                ExpiryDateTime = jwtSecurityToken.ValidTo
+            };
+
+        }
 
         // For a list algorithms applicable to tokens see
         // See: https://datatracker.ietf.org/doc/html/rfc7518
         // See: https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/wiki/Supported-Algorithms
         //
 
-        LoginResponse? res = new()
-        {
-            Jwt = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken),
-            ExpiryDateTime = jwtSecurityToken.ValidTo
-        };
-
-        return Ok(res);
+        return Ok(response);
 
     }
-
-    public OkObjectResult Rsa(LoginRequest value)
-    {
-        // Get Issuer and Audience
-
-        var jwtSetting = jwtOptions.Get("Conso");
-        jwtSetting.EnsureIsValid();
-
-        // Setup claims
-
-        List<Claim>? authClaims = new()
-        {
-            // JwtRegisteredClaimNames contains a list of valid Jwt claim names
-
-            new Claim(ClaimTypes.Name, value.Username),
-            new Claim(ClaimTypes.Role, "Admin"),
-            new Claim(ClaimTypes.Role, "Developer"),
-            new Claim(ClaimTypes.Role, "Tester")
-        };
-
-        string secretKey = EnvironmentHelper.GetVariable(applicationSetting.Name);
-
-        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey, HashAlgorithmName.SHA256);
-
-        try
-        {
-            using (RSA myRsa = RSA.Create())
-            {
-                byte[] pvkBytes = System.IO.File.ReadAllBytes(@"D:\src\github\recep\test2.pvk");
-                
-                myRsa.ImportRSAPublicKey(pvkBytes, out int count);
-
-                var myRsaPbkParams = myRsa.ExportParameters(false);
-
-                AsymmetricSecurityKey key = new RsaSecurityKey(myRsaPbkParams);
-
-                AsymmetricSecurityKey signkey = new RsaSecurityKey(myRsa);
-
-                RsaSecurityKey signkey2;
-                using (var rsa = RSA.Create(2048))
-                {
-                    signkey2 = new RsaSecurityKey(rsa);
-                }
-
-                JwtSecurityTokenHandler? jwtSecurityTokenHandler = new();
-
-                var jwtSecurityToken = jwtSecurityTokenHandler.CreateJwtSecurityToken(
-                    issuer: jwtSetting.Issuer,
-                    audience: jwtSetting.Audience,
-                    subject: new ClaimsIdentity(authClaims),
-                    notBefore: DateTime.UtcNow,
-                    expires: DateTime.UtcNow.AddMinutes(jwtSetting.ExpirationMinutes),
-                    issuedAt: DateTime.UtcNow,
-                    //signingCredentials: new SigningCredentials(scKey, SecurityAlgorithms.HmacSha256, SecurityAlgorithms.Sha256Digest),
-                    signingCredentials: new SigningCredentials(signkey2, SecurityAlgorithms.RsaSsaPssSha256),
-                    encryptingCredentials: new EncryptingCredentials(key, SecurityAlgorithms.RsaOAEP, SecurityAlgorithms.Aes256CbcHmacSha512)
-                );
-
-                LoginResponse? res = new()
-                {
-                    Jwt = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken),
-                    ExpiryDateTime = jwtSecurityToken.ValidTo
-                };
-
-                return Ok(res);
-            }
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+    
 }

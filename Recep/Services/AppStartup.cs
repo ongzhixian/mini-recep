@@ -5,6 +5,7 @@ using Mini.Common.Settings;
 using Mini.Common.Helpers;
 using Mini.Common.Extensions;
 using System.Security.Cryptography;
+using Recep.Models;
 
 namespace Recep.Services;
 
@@ -25,6 +26,8 @@ static internal class AppStartup
 
     static internal void SetupOptions(ConfigurationManager configuration, IServiceCollection services)
     {
+        services.Configure<RsaKeySetting>(configuration.GetSection(RsaKeyName.SigningKey));
+
         services.Configure<ApplicationSetting>(configuration.GetSection("Application"));
 
         foreach (var item in configuration.GetSectionChildren("Jwt"))
@@ -101,4 +104,9 @@ static internal class AppStartup
         services.AddSwaggerGen();
 
     }
+}
+
+public static class RsaKeyName
+{
+    public const string SigningKey = "RsaKeys:SigningKey";
 }

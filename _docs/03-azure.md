@@ -57,6 +57,20 @@ try running the site via kudu debug shell (PowerShell / CMD).
 In `..site\wwwroot` run `dotnet .\Recep.dll` 
 
 
+## Configuration
+
+Configuration variables:
+
+Recep
+RECEP_SIGNING_KEY
+
+
+```ps1 Generate Private/Public keys
+$t4 = [System.Security.Cryptography.RSA]::Create()
+$t4.ToXmlString($true) | Out-File C:\data\rsa\RECEP-PrivateKey.xml
+$t4.ToXmlString($false) | Out-File C:\data\rsa\RECEP-PublicKey.xml
+```
+
 # Reference
 
 https://github.com/Azure/webapps-deploy

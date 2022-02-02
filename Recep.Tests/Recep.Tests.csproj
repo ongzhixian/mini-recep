@@ -19,4 +19,8 @@
     <ProjectReference Include="..\Recep\Recep.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="_data\" />
+  </ItemGroup>
+
 </Project>
