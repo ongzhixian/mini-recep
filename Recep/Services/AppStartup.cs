@@ -6,6 +6,7 @@ using Mini.Common.Helpers;
 using Mini.Common.Extensions;
 using System.Security.Cryptography;
 using Recep.Models;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Recep.Services;
 
@@ -26,7 +27,20 @@ static internal class AppStartup
 
     static internal void SetupOptions(ConfigurationManager configuration, IServiceCollection services)
     {
-        services.Configure<RsaKeySetting>(configuration.GetSection(RsaKeyName.SigningKey));
+        services.Configure<RsaKeySetting2>(RsaKeyName.SigningKey, configuration.GetSection(RsaKeyName.SigningKey));
+
+        services.Configure<RsaKeySetting2>(RsaKeyName.SigningKey, option =>
+        {
+            var s = configuration.GetSection(RsaKeyName.SigningKey);
+            s.Bind("", opt =>
+            {
+                
+            });
+            //configuration.GetSection(RsaKeyName.SigningKey));
+
+    });
+
+        services.Configure<RsaKeySetting>(RsaKeyName.EncryptingKey, configuration.GetSection(RsaKeyName.EncryptingKey));
 
         services.Configure<ApplicationSetting>(configuration.GetSection("Application"));
 
@@ -56,13 +70,24 @@ static internal class AppStartup
                 },
             };
 
+            // Signing key needs to have private key
+            //var signingCredentialSecurityKey = rsaSigningKeySetting.GetRsaSecurityKey(true);
+
+            //var securityCredential = value.Encrypting.Value;
+
+            //using RSA encryptingKeyRsa = RSA.Create();
+
+            //encryptingKeyRsa.FromXmlString(securityCredential.Xml);
+
+            //var encryptingCredentialSecurityKey = new RsaSecurityKey(encryptingKeyRsa);
+
             options.TokenValidationParameters = new()
             {
                 RequireSignedTokens = true,
                 RequireExpirationTime = true,
                 RequireAudience = true,
 
-                ValidateIssuerSigningKey = true,
+                //ValidateIssuerSigningKey = true,
                 ValidateLifetime = true,
                 ValidateIssuer = true,
                 ValidateAudience = true,
@@ -76,7 +101,14 @@ static internal class AppStartup
                 ValidIssuer = jwtSetting.Issuer,
                 ValidAudience = jwtSetting.Audience,
                 IssuerSigningKey = scKey,
-                TokenDecryptionKey = ecKey
+                TokenDecryptionKey = ecKey,
+                //TokenDecryptionKeyResolver = (token, securityToken, kid, validationParameters) =>
+                //{
+                //    // string token, SecurityToken securityToken, string kid, TokenValidationParameters validationParameters
+                //    List<SecurityKey> keys = new List<SecurityKey>();
+                //    keys.Add(new RsaSecurityKey(RSA.Create()));
+                //    return keys;
+                //}
             };
         });
     }
@@ -109,4 +141,6 @@ static internal class AppStartup
 public static class RsaKeyName
 {
     public const string SigningKey = "RsaKeys:SigningKey";
+    public const string EncryptingKey = "RsaKeys:EncryptingKey";
 }
+

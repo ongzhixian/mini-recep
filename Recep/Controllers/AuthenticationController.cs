@@ -6,6 +6,7 @@ using Mini.Common.Helpers;
 using Mini.Common.Requests;
 using Mini.Common.Responses;
 using Mini.Common.Settings;
+using Recep.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -21,12 +22,12 @@ public class AuthenticationController : ControllerBase
 {
     private readonly IOptionsMonitor<JwtSetting> jwtOptions;
     private readonly ApplicationSetting applicationSetting;
-    private readonly RsaKeySetting rsaSigningKeySetting;
+    private readonly RsaKeySetting2 rsaSigningKeySetting;
 
     public AuthenticationController(
         IOptionsMonitor<JwtSetting> jwtOptionsMonitor
         , IOptions<ApplicationSetting> applicationSettingOptions
-        , IOptions<RsaKeySetting> rsaKeySettingOptions)
+        , IOptions<RsaKeySetting2> rsaKeySettingOptions)
     {
         jwtOptions = jwtOptionsMonitor;
 
@@ -37,7 +38,7 @@ public class AuthenticationController : ControllerBase
 
     // POST api/<AuthenticationController>
     [HttpPost]
-    public OkObjectResult Post([FromBody] LoginRequest value)
+    public async Task<OkObjectResult> PostAsync([FromBody] LoginRequest value)
     {
         LoginResponse response;
 
@@ -102,7 +103,7 @@ public class AuthenticationController : ControllerBase
             // Use Asymmetric encryption
 
             // Signing key needs to have private key
-            signingCredentialSecurityKey = rsaSigningKeySetting.GetRsaSecurityKey(true);
+            signingCredentialSecurityKey = await rsaSigningKeySetting.GetRsaSecurityKeyAsync(true);
 
             var securityCredential = value.Encrypting.Value;
 

@@ -71,6 +71,20 @@ $t4.ToXmlString($true) | Out-File C:\data\rsa\RECEP-PrivateKey.xml
 $t4.ToXmlString($false) | Out-File C:\data\rsa\RECEP-PublicKey.xml
 ```
 
+## PKI note
+
+Public keys are used to:
+
+1.  Encrypt a message to other individuals on the system
+2.  Confirm a signature signed by someone’s private key
+
+Private keys are used to:
+
+1.  decrypt a message secured by your public key
+2.  sign your message with your private key so that the recipients know the message could only have come from you.
+
+
+
 # Reference
 
 https://github.com/Azure/webapps-deploy

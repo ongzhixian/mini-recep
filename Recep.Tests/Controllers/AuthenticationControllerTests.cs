@@ -83,7 +83,7 @@ public class AuthenticationControllerTests
             Password = "somePassword"
         };
 
-        var result = controller.Post(req);
+        var result = controller.PostAsync(req);
 
         Assert.IsNotNull(result);
         Assert.AreEqual(200, result.StatusCode);
@@ -132,7 +132,7 @@ public class AuthenticationControllerTests
             }
         };
 
-        var result = controller.Post(req);
+        var result = controller.PostAsync(req);
 
         Assert.IsNotNull(result);
         Assert.AreEqual(200, result.StatusCode);
