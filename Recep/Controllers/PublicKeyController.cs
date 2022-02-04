@@ -35,7 +35,7 @@ public class PublicKeyController : ControllerBase
     // GET api/<PublicKeyController>/5
     [HttpGet("{purpose}")]
     public IActionResult Get(string purpose)
-    {
+     {
         if (purpose == "encrypt")
             return new OkObjectResult(rsaEncryptingKeySetting.GetRsaSecurityKeyXml(false));
 

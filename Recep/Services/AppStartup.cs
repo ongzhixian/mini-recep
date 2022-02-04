@@ -27,18 +27,18 @@ static internal class AppStartup
 
     static internal void SetupOptions(ConfigurationManager configuration, IServiceCollection services)
     {
-        services.Configure<RsaKeySetting2>(RsaKeyName.SigningKey, configuration.GetSection(RsaKeyName.SigningKey));
+        services.Configure<RsaKeySetting>(RsaKeyName.SigningKey, configuration.GetSection(RsaKeyName.SigningKey));
 
-        services.Configure<RsaKeySetting2>(RsaKeyName.SigningKey, option =>
-        {
-            var s = configuration.GetSection(RsaKeyName.SigningKey);
-            s.Bind("", opt =>
-            {
+        //services.Configure<RsaKeySetting2>(RsaKeyName.SigningKey, option =>
+        //{
+        //    var s = configuration.GetSection(RsaKeyName.SigningKey);
+        //    s.Bind("", opt =>
+        //    {
                 
-            });
-            //configuration.GetSection(RsaKeyName.SigningKey));
+        //    });
+        //    //configuration.GetSection(RsaKeyName.SigningKey));
 
-    });
+        //});
 
         services.Configure<RsaKeySetting>(RsaKeyName.EncryptingKey, configuration.GetSection(RsaKeyName.EncryptingKey));
 
