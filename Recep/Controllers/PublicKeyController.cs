@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Mini.Common.Settings;
 using Recep.Services;
+using System.Net.Mime;
 
 namespace Recep.Controllers;
 
@@ -18,29 +19,35 @@ public class PublicKeyController : ControllerBase
     {
         rsaSigningKeySetting = rsaKeySettingOptions.Get(RsaKeyName.SigningKey);
 
-        //rsaSigningKeySetting.EnsureIsValid();
+        rsaSigningKeySetting.EnsureIsValid();
 
         rsaEncryptingKeySetting = rsaKeySettingOptions.Get(RsaKeyName.EncryptingKey);
 
-        //rsaEncryptingKeySetting.EnsureIsValid();
-
-        //TODO:
-        // Maybe RsaKeySetting.RsaKeyDataSource.Default is better Unknown
-        // Improvement for RsaKeySetting in Mini.Common
-        // if rsaSigningKeySetting.SourceType == RsaKeySetting.RsaKeyDataSource.Default
-        //    // throw exception
-        // To use Ensure-pattern?
+        rsaEncryptingKeySetting.EnsureIsValid();
     }
 
     // GET api/<PublicKeyController>/5
     [HttpGet("{purpose}")]
-    public IActionResult Get(string purpose)
-     {
+    public async Task<IActionResult> GetAsync(string purpose)
+    {
         if (purpose == "encrypt")
-            return new OkObjectResult(rsaEncryptingKeySetting.GetRsaSecurityKeyXml(false));
+            return new ContentResult
+            {
+                Content =  await rsaEncryptingKeySetting.GetRsaSecurityKeyXmlAsync(false),
+                ContentType = MediaTypeNames.Text.Plain,
+                StatusCode = StatusCodes.Status200OK
+            };
 
         if (purpose == "sign")
-            return new OkObjectResult(rsaSigningKeySetting.GetRsaSecurityKeyXml(false));
+            return new ContentResult
+            {
+                Content = await rsaSigningKeySetting.GetRsaSecurityKeyXmlAsync(false),
+                ContentType = MediaTypeNames.Text.Plain,
+                StatusCode = StatusCodes.Status200OK
+            };
+
+        // Note: Using ContentResult to force return of plain/text type.
+        //       If we use OkObjectResult, the output will be a JSON
 
         return new BadRequestObjectResult($"Invalid purpose {purpose}");
     }

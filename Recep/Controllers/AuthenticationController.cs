@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Mini.Common.Helpers;
+using Mini.Common.Models;
 using Mini.Common.Requests;
 using Mini.Common.Responses;
+using Mini.Common.Services;
 using Mini.Common.Settings;
 using Recep.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -22,24 +24,32 @@ public class AuthenticationController : ControllerBase
 {
     private readonly IOptionsMonitor<JwtSetting> jwtOptions;
     private readonly ApplicationSetting applicationSetting;
-    private readonly RsaKeySetting2 rsaSigningKeySetting;
+    private readonly RsaKeySetting rsaSigningKeySetting;
+    private readonly IPkedService pkedService;
 
     public AuthenticationController(
         IOptionsMonitor<JwtSetting> jwtOptionsMonitor
         , IOptions<ApplicationSetting> applicationSettingOptions
-        , IOptions<RsaKeySetting2> rsaKeySettingOptions)
+        , IOptionsSnapshot<RsaKeySetting> rsaKeySettingOptions
+        , IPkedService pkedService
+        )
     {
         jwtOptions = jwtOptionsMonitor;
 
         applicationSetting = applicationSettingOptions.Value;
 
-        rsaSigningKeySetting = rsaKeySettingOptions.Value;
+        rsaSigningKeySetting = rsaKeySettingOptions.Get(RsaKeyName.SigningKey);
+
+        this.pkedService = pkedService;
     }
 
     // POST api/<AuthenticationController>
     [HttpPost]
-    public async Task<OkObjectResult> PostAsync([FromBody] LoginRequest value)
+    //public async Task<OkObjectResult> PostAsync([FromBody] LoginRequest value)
+    public async Task<OkObjectResult> PostAsync([FromBody] EncryptedMessage stringValue)
     {
+        var value = await pkedService.DecryptAsync<LoginRequest>(stringValue, RsaKeyName.EncryptingKey);
+
         LoginResponse response;
 
         SecurityKey signingCredentialSecurityKey;
@@ -47,6 +57,7 @@ public class AuthenticationController : ControllerBase
 
         JwtSecurityTokenHandler? jwtSecurityTokenHandler = new();
         JwtSecurityToken? jwtSecurityToken;
+
 
         // Get Issuer and Audience
 
@@ -59,7 +70,8 @@ public class AuthenticationController : ControllerBase
         {
             // JwtRegisteredClaimNames contains a list of valid Jwt claim names
 
-            new Claim(ClaimTypes.Name, value.Username),
+            //new Claim(ClaimTypes.Name, value.Username),
+            new Claim(ClaimTypes.Name, "TEMP"),
             new Claim(ClaimTypes.Role, "Admin"),
             new Claim(ClaimTypes.Role, "Developer"),
             new Claim(ClaimTypes.Role, "Tester")
@@ -91,6 +103,7 @@ public class AuthenticationController : ControllerBase
                     , SecurityAlgorithms.Aes256KW
                     , SecurityAlgorithms.Aes256CbcHmacSha512)
                 );
+
 
             response = new()
             {

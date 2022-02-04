@@ -4,10 +4,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mini.Common.Models;
 using Mini.Common.Requests;
 using Mini.Common.Responses;
+using Mini.Common.Services;
 using Mini.Common.Settings;
 using Moq;
 using Recep.Controllers;
+using Recep.Services;
 using System;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Recep.Tests.Controllers;
 
@@ -16,7 +20,8 @@ public class AuthenticationControllerTests
 {
     private Mock<IOptionsMonitor<JwtSetting>> mockJwtOptionsMonitor = new();
     private Mock<IOptions<ApplicationSetting>> mockApplicationSettingOptions = new();
-    private Mock<IOptions<RsaKeySetting>> mockRsaKeySettingOptions = new();
+    private Mock<IOptionsSnapshot<RsaKeySetting>> mockRsaKeySettingOptions = new();
+    private Mock<IPkedService> mockPkedService = new();
 
     private readonly string signingKeyPrivateXml = @"
 <RSAKeyValue>
@@ -36,12 +41,14 @@ public class AuthenticationControllerTests
 <Exponent>AQAB</Exponent>
 </RSAKeyValue>";
 
+
     [TestInitialize()]
     public void BeforeEachTest()
     {
         mockJwtOptionsMonitor = new Mock<IOptionsMonitor<JwtSetting>>();
         mockApplicationSettingOptions = new Mock<IOptions<ApplicationSetting>>();
-        mockRsaKeySettingOptions = new Mock<IOptions<RsaKeySetting>>();
+        mockRsaKeySettingOptions = new Mock<IOptionsSnapshot<RsaKeySetting>>();
+        mockPkedService = new Mock<IPkedService>();
     }
 
     [TestMethod()]
@@ -50,13 +57,14 @@ public class AuthenticationControllerTests
         AuthenticationController? controller = new(
             mockJwtOptionsMonitor.Object
             , mockApplicationSettingOptions.Object
-            , mockRsaKeySettingOptions.Object);
+            , mockRsaKeySettingOptions.Object
+            , mockPkedService.Object);
 
         Assert.IsNotNull(controller);
     }
 
     [TestMethod()]
-    public void PostSymmetricTest()
+    public async Task PostSymmetricTestAsync()
     {
         mockJwtOptionsMonitor.Setup(m => m.Get(It.IsAny<string>())).Returns(new JwtSetting
         {
@@ -75,15 +83,13 @@ public class AuthenticationControllerTests
         AuthenticationController? controller = new(
             mockJwtOptionsMonitor.Object
             , mockApplicationSettingOptions.Object
-            , mockRsaKeySettingOptions.Object);
+            , mockRsaKeySettingOptions.Object
+            , mockPkedService.Object);
 
-        LoginRequest req = new()
-        {
-            Username = "someUsername",
-            Password = "somePassword"
-        };
+        var encryptedMessage = JsonSerializer.Deserialize<EncryptedMessage>(
+            "{\"IV\":\"UelZxbTAbykJw2HnHZuMbQ==\",\"EncryptedSessionKey\":\"F7PdjU0C0QJ4QPgGgdgj2DvSyoDD8LtyNgHXbJgoC4sxi+zaOicB8t5Qs0woniImxP/HFpbAO21cYeK475afGWcNV809QZEuLPSi321oEKN58YU0PSd1BEf2FLhecXNWj1+9Mfv/K4BL7dxAu3UkR0u42yunAOW9lVGXoxpxD2LrtqRIsXataQeIgtkmJ6wGhcq139t0j1c/JkhfsMF5hhSCHsWFfsVi0IRNr5VOEluoASQ3MOVN3QcYlxJPFxJ0P9YpiiTwCCGLP/vl0V12jelGAgaEdD5sw9lnVA24W1u9QZCTDS5/L9SA/IuFTAcWktnPMj86lM7uAykHpX3DUA==\",\"EncryptedMessageBytes\":\"D30g7YjK9Ds3EOJa7B9T57QQ89ORtyayMkrSgpm0BnUG37yf3+I2KDObLLGjdzsIf2a7dnvOznqwa46Unm9due3cjJqTnXm7UgLy0vsr9NpYXt0detqWLQJSk5uxRFJexn4sswZkKtAqzVPB7bb6Q68TVsEj7Ih+efGgBgRmVWa5g/oYdYmmr9EQHi0m7nabk7obwfCNG4K4g9ihWOVxFSIfjnNfSyD8mrFELpjcanj4srMgcdABQrB6ZNOlBVimUh/c4YZvgqFfGNFs/H/VxtpFvh/uraExLxYI1GyvRpJVLTqJyknJNcCJcrjOG5lB/7muKukpTL4dBM0WVXQDmLeCfhEvgnF+/dEaOfwPineYrleF08r6oH+JWQ+zG6wHC4QeKLOMWWITWQR8Z4v4k8y5kBVUERzraS3L/sD46KOk3x85McDSPuEViXCT0R4t8iYXWxfbJnm8dos8LWbGSTlTxAO9vbbF7wVv4KLClIdiQLEPcOwYD22vwadIeSjsKm3x61S0GPsYrDSfM6w7fgeMupzljfef/H04wQ+NaN66oNWDZGVab0V/jHeo7+8JEXwbibFc9TroaDd7A8YvZiFE+xk5h9ROHzexwKGOwz5AQDWD3Py6GnpruHHPE5XRAYrJXZH3pmaVYIWzaaqgk+oS/Ld3pcNc2Sylm1FBoObtgzBi7Me6AeneL6UNW7wnOaqpoUzygw1pY1N2ZZ76un0Q+GcaJ7CE5L7oBoUAG+YhohMrXmgMtR4AU/3CJYwXJgvWdur2p7vGXJRPXiOmyiSWuy44wdrEdhd9vMu6xDLO6rdt4h896B1nhjMUEkbaxMPxwqKklk0VNohQ7a+2//EgRNZIj/bnddxH3i+jJ7M=\"}");
 
-        var result = controller.PostAsync(req);
+        var result = await controller.PostAsync(encryptedMessage);
 
         Assert.IsNotNull(result);
         Assert.AreEqual(200, result.StatusCode);
@@ -91,7 +97,7 @@ public class AuthenticationControllerTests
     }
 
     [TestMethod()]
-    public void PostAsymmetricTest()
+    public async Task PostAsymmetricTestAsync()
     {
         Environment.SetEnvironmentVariable("UNIT_TEST_SIGNING_KEY_PRIVATE", signingKeyPrivateXml);
 
@@ -107,32 +113,36 @@ public class AuthenticationControllerTests
             Version = "someVersion"
         });
 
-        mockRsaKeySettingOptions.Setup(m => m.Value).Returns(new RsaKeySetting
+        mockRsaKeySettingOptions.Setup(m => m.Get(RsaKeyName.SigningKey)).Returns(new RsaKeySetting
         {
             SourceType = RsaKeySetting.RsaKeyDataSource.EnvironmentVariable,
             Source = "UNIT_TEST_SIGNING_KEY_PRIVATE"
 
         });
 
+        mockPkedService.Setup(m => m.DecryptAsync<LoginRequest>(It.IsAny<EncryptedMessage>(), It.IsAny<string>())).ReturnsAsync(
+            new LoginRequest()
+            {
+                Username = "someUsername",
+                Password = "somePassword",
+                Encrypting = new SecurityCredential
+                {
+                    SecurityAlgorithm = SecurityAlgorithms.RsaOAEP,
+                    SecurityDigest = SecurityAlgorithms.Aes256CbcHmacSha512,
+                    Xml = encryptingKeyPublicXml
+                }
+            });
 
         AuthenticationController? controller = new(
             mockJwtOptionsMonitor.Object
             , mockApplicationSettingOptions.Object
-            , mockRsaKeySettingOptions.Object);
+            , mockRsaKeySettingOptions.Object
+            , mockPkedService.Object);
 
-        LoginRequest req = new()
-        {
-            Username = "someUsername",
-            Password = "somePassword",
-            Encrypting = new SecurityCredential
-            {
-                SecurityAlgorithm = SecurityAlgorithms.RsaOAEP,
-                SecurityDigest = SecurityAlgorithms.Aes256CbcHmacSha512,
-                Xml = encryptingKeyPublicXml
-            }
-        };
+        var encryptedMessage = JsonSerializer.Deserialize<EncryptedMessage>(
+            "{\"IV\":\"UelZxbTAbykJw2HnHZuMbQ==\",\"EncryptedSessionKey\":\"F7PdjU0C0QJ4QPgGgdgj2DvSyoDD8LtyNgHXbJgoC4sxi+zaOicB8t5Qs0woniImxP/HFpbAO21cYeK475afGWcNV809QZEuLPSi321oEKN58YU0PSd1BEf2FLhecXNWj1+9Mfv/K4BL7dxAu3UkR0u42yunAOW9lVGXoxpxD2LrtqRIsXataQeIgtkmJ6wGhcq139t0j1c/JkhfsMF5hhSCHsWFfsVi0IRNr5VOEluoASQ3MOVN3QcYlxJPFxJ0P9YpiiTwCCGLP/vl0V12jelGAgaEdD5sw9lnVA24W1u9QZCTDS5/L9SA/IuFTAcWktnPMj86lM7uAykHpX3DUA==\",\"EncryptedMessageBytes\":\"D30g7YjK9Ds3EOJa7B9T57QQ89ORtyayMkrSgpm0BnUG37yf3+I2KDObLLGjdzsIf2a7dnvOznqwa46Unm9due3cjJqTnXm7UgLy0vsr9NpYXt0detqWLQJSk5uxRFJexn4sswZkKtAqzVPB7bb6Q68TVsEj7Ih+efGgBgRmVWa5g/oYdYmmr9EQHi0m7nabk7obwfCNG4K4g9ihWOVxFSIfjnNfSyD8mrFELpjcanj4srMgcdABQrB6ZNOlBVimUh/c4YZvgqFfGNFs/H/VxtpFvh/uraExLxYI1GyvRpJVLTqJyknJNcCJcrjOG5lB/7muKukpTL4dBM0WVXQDmLeCfhEvgnF+/dEaOfwPineYrleF08r6oH+JWQ+zG6wHC4QeKLOMWWITWQR8Z4v4k8y5kBVUERzraS3L/sD46KOk3x85McDSPuEViXCT0R4t8iYXWxfbJnm8dos8LWbGSTlTxAO9vbbF7wVv4KLClIdiQLEPcOwYD22vwadIeSjsKm3x61S0GPsYrDSfM6w7fgeMupzljfef/H04wQ+NaN66oNWDZGVab0V/jHeo7+8JEXwbibFc9TroaDd7A8YvZiFE+xk5h9ROHzexwKGOwz5AQDWD3Py6GnpruHHPE5XRAYrJXZH3pmaVYIWzaaqgk+oS/Ld3pcNc2Sylm1FBoObtgzBi7Me6AeneL6UNW7wnOaqpoUzygw1pY1N2ZZ76un0Q+GcaJ7CE5L7oBoUAG+YhohMrXmgMtR4AU/3CJYwXJgvWdur2p7vGXJRPXiOmyiSWuy44wdrEdhd9vMu6xDLO6rdt4h896B1nhjMUEkbaxMPxwqKklk0VNohQ7a+2//EgRNZIj/bnddxH3i+jJ7M=\"}");
 
-        var result = controller.PostAsync(req);
+        var result = await controller.PostAsync(encryptedMessage);
 
         Assert.IsNotNull(result);
         Assert.AreEqual(200, result.StatusCode);
