@@ -7,6 +7,7 @@ using Mini.Common.Extensions;
 using System.Security.Cryptography;
 using Recep.Models;
 using Microsoft.IdentityModel.Tokens;
+using Mini.Common.Services;
 
 namespace Recep.Services;
 
@@ -27,18 +28,7 @@ static internal class AppStartup
 
     static internal void SetupOptions(ConfigurationManager configuration, IServiceCollection services)
     {
-        services.Configure<RsaKeySetting2>(RsaKeyName.SigningKey, configuration.GetSection(RsaKeyName.SigningKey));
-
-        services.Configure<RsaKeySetting2>(RsaKeyName.SigningKey, option =>
-        {
-            var s = configuration.GetSection(RsaKeyName.SigningKey);
-            s.Bind("", opt =>
-            {
-                
-            });
-            //configuration.GetSection(RsaKeyName.SigningKey));
-
-    });
+        services.Configure<RsaKeySetting>(RsaKeyName.SigningKey, configuration.GetSection(RsaKeyName.SigningKey));
 
         services.Configure<RsaKeySetting>(RsaKeyName.EncryptingKey, configuration.GetSection(RsaKeyName.EncryptingKey));
 
@@ -134,6 +124,8 @@ static internal class AppStartup
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
+
+        services.AddScoped<IPkedService, PkedService>();
 
     }
 }

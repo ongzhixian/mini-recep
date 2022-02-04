@@ -29,17 +29,20 @@ public class UserController : ControllerBase
     [HttpPost]
     public void Post([FromBody] User value)
     {
+        throw new NotImplementedException();
     }
 
     // PUT api/<UserController>/5
     [HttpPut("{id}")]
     public void Put(int id, [FromBody] string value)
     {
+        throw new NotImplementedException();
     }
 
     // DELETE api/<UserController>/5
     [HttpDelete("{id}")]
     public void Delete(int id)
     {
+        throw new NotImplementedException();
     }
 }

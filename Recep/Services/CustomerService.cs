@@ -1,7 +1,5 @@
 ﻿using Recep.Models;
 
-// namespace Recep.Wms.Services;
-
 namespace Recep.Services;
 
 public interface ICustomerService
@@ -11,10 +9,6 @@ public interface ICustomerService
     void Add(ICustomer customer);
 
     void Update(ICustomer customer);
-
-    //void Archive(ICustomer customer);
-
-    //void Remove(ICustomer customer);
 
 }
 
