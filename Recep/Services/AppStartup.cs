@@ -58,6 +58,11 @@ static internal class AppStartup
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return Task.CompletedTask;
                 },
+
+                OnMessageReceived = ctx =>
+                {
+                    return Task.CompletedTask;
+                }
             };
 
             // Signing key needs to have private key

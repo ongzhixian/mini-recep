@@ -15,6 +15,7 @@ public class UserController : ControllerBase
     [HttpGet]
     public IEnumerable<string> Get()
     {
+        // I need to know caller's public key here somehow
         return new string[] { "value1", "value2" };
     }
 
