@@ -5,7 +5,6 @@ using Mini.Common.Settings;
 using Mini.Common.Helpers;
 using Mini.Common.Extensions;
 using System.Security.Cryptography;
-using Recep.Models;
 using Microsoft.IdentityModel.Tokens;
 using Mini.Common.Services;
 
@@ -38,7 +37,7 @@ static internal class AppStartup
             services.Configure<JwtSetting>(item.Key, item); // Example: item.Key = "Conso"
     }
 
-    static internal void SetupAuthentication(ConfigurationManager configuration, IServiceCollection services)
+    static internal async Task SetupAuthenticationAsync(ConfigurationManager configuration, IServiceCollection services)
     {
         var jwtSetting = configuration.GetSectionAs<JwtSetting>("Jwt:Conso");
 
@@ -46,7 +45,12 @@ static internal class AppStartup
 
         string secretKey = EnvironmentHelper.GetVariable(applicationSetting.Name);
 
-        (var scKey, var ecKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey, HashAlgorithmName.SHA256);
+        (var symmetricSigningKey, var symmetricEncryptingKey) = SecurityKeyHelper.SymmetricSecurityKey(secretKey, HashAlgorithmName.SHA256);
+
+        // Note: Signing key needs to be private key
+
+        var rsaSigningSecurityKey = await configuration.GetSectionAs<RsaKeySetting>(RsaKeyName.SigningKey)
+            .GetRsaSecurityKeyAsync(true);
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {
@@ -57,24 +61,10 @@ static internal class AppStartup
                     ctx.NoResult();
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return Task.CompletedTask;
-                },
-
-                OnMessageReceived = ctx =>
-                {
-                    return Task.CompletedTask;
                 }
             };
 
             // Signing key needs to have private key
-            //var signingCredentialSecurityKey = rsaSigningKeySetting.GetRsaSecurityKey(true);
-
-            //var securityCredential = value.Encrypting.Value;
-
-            //using RSA encryptingKeyRsa = RSA.Create();
-
-            //encryptingKeyRsa.FromXmlString(securityCredential.Xml);
-
-            //var encryptingCredentialSecurityKey = new RsaSecurityKey(encryptingKeyRsa);
 
             options.TokenValidationParameters = new()
             {
@@ -82,10 +72,10 @@ static internal class AppStartup
                 RequireExpirationTime = true,
                 RequireAudience = true,
 
-                //ValidateIssuerSigningKey = true,
+                ValidateIssuerSigningKey = true,
                 ValidateLifetime = true,
                 ValidateIssuer = true,
-                ValidateAudience = true,
+                ValidateAudience = true, 
 
                 // TokenValidator can accept multiple issuers, and audiences via ValidIssuers and ValidAudiences.
                 // If we want more dynamicity, we should use the respective validator delegates.
@@ -95,8 +85,32 @@ static internal class AppStartup
 
                 ValidIssuer = jwtSetting.Issuer,
                 ValidAudience = jwtSetting.Audience,
-                IssuerSigningKey = scKey,
-                TokenDecryptionKey = ecKey,
+
+                // IssuerSigningKey and TokenDecryptionKey only accept a single SecurityKey
+                // IssuerSigningKey = scKey,
+                // TokenDecryptionKey = ecKey,
+                // To configure for multiple keys use: IssuerSigningKeys, TokenDecryptionKeys
+
+                IssuerSigningKeys = new List<SecurityKey>()
+                {
+                    rsaSigningSecurityKey, 
+                    symmetricSigningKey
+                }
+
+#pragma warning disable S125 // Sections of code should not be commented out
+
+                // If we do not want to use a fixed list of IssuerSigningKeys/TokenDecryptionKeys
+                // We can make use IssuerSigningKeyResolver/ TokenDecryptionKeyResolver
+
+                //IssuerSigningKeyResolver = (token, securityToken, kid, validationParameters) =>
+                //{
+                //    JwtSecurityToken? jwtSecurityToken = securityToken as JwtSecurityToken;
+                //    // jwtSecurityToken.SignatureAlgorithm
+                //    IList<SecurityKey> keys = new List<SecurityKey>();
+                //    keys.Add(rsaSigningSecurityKey);
+                //    return keys;
+                //}
+
                 //TokenDecryptionKeyResolver = (token, securityToken, kid, validationParameters) =>
                 //{
                 //    // string token, SecurityToken securityToken, string kid, TokenValidationParameters validationParameters
@@ -104,7 +118,11 @@ static internal class AppStartup
                 //    keys.Add(new RsaSecurityKey(RSA.Create()));
                 //    return keys;
                 //}
+
+#pragma warning restore S125 // Sections of code should not be commented out
+
             };
+
         });
     }
 
@@ -140,4 +158,3 @@ public static class RsaKeyName
     public const string SigningKey = "RsaKeys:SigningKey";
     public const string EncryptingKey = "RsaKeys:EncryptingKey";
 }
-

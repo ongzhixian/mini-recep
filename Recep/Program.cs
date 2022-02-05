@@ -7,7 +7,7 @@ AppStartup.ConfigureWebHost(builder.WebHost);
 
 AppStartup.SetupOptions(builder.Configuration, builder.Services);
 
-AppStartup.SetupAuthentication(builder.Configuration, builder.Services);
+await AppStartup.SetupAuthenticationAsync(builder.Configuration, builder.Services);
 
 AppStartup.SetupAuthorization(builder.Services);
 

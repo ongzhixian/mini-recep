@@ -104,7 +104,6 @@ public class AuthenticationController : ControllerBase
                     , SecurityAlgorithms.Aes256CbcHmacSha512)
                 );
 
-
             response = new()
             {
                 Jwt = jwtSecurityTokenHandler.WriteToken(jwtSecurityToken),
