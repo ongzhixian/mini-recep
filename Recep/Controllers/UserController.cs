@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Mini.Wms.DataAbstraction;
 using Recep.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -28,7 +29,7 @@ public class UserController : ControllerBase
 
     // POST api/<UserController>
     [HttpPost]
-    public void Post([FromBody] User value)
+    public void Post([FromBody] IUser<T> user)
     {
         throw new NotImplementedException();
     }
