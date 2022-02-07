@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Mini.Wms.DataAbstraction;
-using Recep.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using Mini.Wms.Abstraction.Models;
+using Mini.Wms.Abstraction.Services;
+using Mini.Wms.DomainMessages;
+using Mini.Wms.MongoDbImplementation.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -12,12 +13,35 @@ namespace Recep.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
+    private readonly IUserService<string> userService;
+
+    public UserController(IUserService<string> userService)
+    {
+        this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
+    }
+
     // GET: api/<UserController>
     [HttpGet]
-    public IEnumerable<string> Get()
+    public async Task<IEnumerable<UserRecord>> GetAsync()
     {
-        // I need to know caller's public key here somehow
-        return new string[] { "value1", "value2" };
+        try
+        {
+            IEnumerable<IUser<string>>? result = await userService.AllAsync();
+
+            IEnumerable<UserRecord>? userList = result.Select(r => new UserRecord
+            {
+                Username = r.Username,
+                FirstName = r.FirstName,
+                LastName = r.LastName,
+            });
+
+            return userList;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+        
     }
 
     // GET api/<UserController>/5
@@ -29,9 +53,17 @@ public class UserController : ControllerBase
 
     // POST api/<UserController>
     [HttpPost]
-    public void Post([FromBody] IUser<T> user)
+    public async Task PostAsync([FromBody] NewUserMessage newUser)
     {
-        throw new NotImplementedException();
+        User userDbObject = new User
+        {
+            Username = newUser.Username,
+            FirstName = newUser.FirstName,
+            LastName = newUser.LastName
+        };
+
+        await userService.AddAsync(userDbObject);
+
     }
 
     // PUT api/<UserController>/5

@@ -11,7 +11,7 @@ await AppStartup.SetupAuthenticationAsync(builder.Configuration, builder.Service
 
 AppStartup.SetupAuthorization(builder.Services);
 
-AppStartup.SetupServices(builder.Services);
+AppStartup.SetupServices(builder.Configuration, builder.Services);
 
 var app = builder.Build();
 

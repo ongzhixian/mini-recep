@@ -7,6 +7,12 @@ using Mini.Common.Extensions;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 using Mini.Common.Services;
+using Mini.Wms.MongoDbImplementation.Services;
+using Mini.Wms.Abstraction.Services;
+using MongoDB.Driver;
+using Mini.Wms.Abstraction.Models;
+using MongoDB.Bson.Serialization;
+using Mini.Wms.MongoDbImplementation.Models;
 
 namespace Recep.Services;
 
@@ -139,7 +145,7 @@ static internal class AppStartup
         });
     }
 
-    static internal void SetupServices(IServiceCollection services)
+    static internal void SetupServices(ConfigurationManager configuration, IServiceCollection services)
     {
         // Add services to the container.
         services.AddControllers();
@@ -150,6 +156,29 @@ static internal class AppStartup
 
         services.AddScoped<IPkedService, PkedService>();
 
+        services.AddScoped<IUserService<string>, UserService<string>>();
+
+        string miniToolsConnectionString = configuration.GetValue<string>("mongodb:minitools:ConnectionString");
+
+        setupMongoDbServices(services, miniToolsConnectionString);
+
+    }
+
+    private static void setupMongoDbServices(IServiceCollection services, string miniToolsConnectionString)
+    {
+        // Registering MongoDb model discriminators (do it before you access DB)
+        BsonClassMap.RegisterClassMap<User>();
+
+        services.AddSingleton<IMongoDatabase>(sp =>
+        {
+            IMongoClient mongoClient = new MongoClient(miniToolsConnectionString);
+            string databaseName = MongoUrl.Create(miniToolsConnectionString).DatabaseName;
+            return mongoClient.GetDatabase(databaseName);
+        });
+
+        services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<IUser<string>>(typeof(User).Name));
+        //builder.Services.AddSingleton<IMongoCollection<Bookmark>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Bookmark>("bookmark"));
+        //builder.Services.AddSingleton<IMongoCollection<Note>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Note>("note"));
     }
 }
 
