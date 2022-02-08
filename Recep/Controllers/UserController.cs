@@ -13,9 +13,9 @@ namespace Recep.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
-    private readonly IUserService<string> userService;
+    private readonly IUserService<string, User> userService;
 
-    public UserController(IUserService<string> userService)
+    public UserController(IUserService<string, User> userService)
     {
         this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
     }

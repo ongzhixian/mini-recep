@@ -156,7 +156,7 @@ static internal class AppStartup
 
         services.AddScoped<IPkedService, PkedService>();
 
-        services.AddScoped<IUserService<string>, UserService<string>>();
+        services.AddScoped<IUserService<string, User>, UserService>();
 
         string miniToolsConnectionString = configuration.GetValue<string>("mongodb:minitools:ConnectionString");
 
@@ -176,7 +176,7 @@ static internal class AppStartup
             return mongoClient.GetDatabase(databaseName);
         });
 
-        services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<IUser<string>>(typeof(User).Name));
+        services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<User>(typeof(User).Name));
         //builder.Services.AddSingleton<IMongoCollection<Bookmark>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Bookmark>("bookmark"));
         //builder.Services.AddSingleton<IMongoCollection<Note>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Note>("note"));
     }
