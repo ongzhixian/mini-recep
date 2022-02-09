@@ -160,11 +160,11 @@ static internal class AppStartup
 
         string miniToolsConnectionString = configuration.GetValue<string>("mongodb:minitools:ConnectionString");
 
-        setupMongoDbServices(services, miniToolsConnectionString);
+        SetupMongoDbServices(services, miniToolsConnectionString);
 
     }
 
-    private static void setupMongoDbServices(IServiceCollection services, string miniToolsConnectionString)
+    private static void SetupMongoDbServices(IServiceCollection services, string miniToolsConnectionString)
     {
         // Registering MongoDb model discriminators (do it before you access DB)
         BsonClassMap.RegisterClassMap<User>();
@@ -177,8 +177,8 @@ static internal class AppStartup
         });
 
         services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<User>(typeof(User).Name));
-        //builder.Services.AddSingleton<IMongoCollection<Bookmark>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Bookmark>("bookmark"));
-        //builder.Services.AddSingleton<IMongoCollection<Note>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Note>("note"));
+        //builder.Services.AddSingleton<IMongoCollection<Bookmark>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Bookmark>("bookmark"))
+        //builder.Services.AddSingleton<IMongoCollection<Note>>(sp => sp.GetRequiredService<IMongoDatabase>().GetCollection<Note>("note"))
     }
 }
 

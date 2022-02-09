@@ -2,7 +2,9 @@
 using Mini.Wms.Abstraction.Models;
 using Mini.Wms.Abstraction.Services;
 using Mini.Wms.DomainMessages;
+using Mini.Wms.MongoDbImplementation;
 using Mini.Wms.MongoDbImplementation.Models;
+using Recep.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -22,26 +24,24 @@ public class UserController : ControllerBase
 
     // GET: api/<UserController>
     [HttpGet]
-    public async Task<IEnumerable<UserRecord>> GetAsync()
+    public async Task<PagedData<UserRecord>> GetAsync()
     {
-        try
-        {
-            IEnumerable<IUser<string>>? result = await userService.AllAsync();
+        PagedDataOptions pagedDataOptions = new(Request.Query);
 
-            IEnumerable<UserRecord>? userList = result.Select(r => new UserRecord
-            {
-                Username = r.Username,
-                FirstName = r.FirstName,
-                LastName = r.LastName,
-            });
+        var result = await userService.PageAsync(pagedDataOptions);
 
-            return userList;
-        }
-        catch (Exception ex)
+        var userList = result.Data.Select(r => new UserRecord
         {
-            throw;
-        }
-        
+            Username = r.Username,
+            FirstName = r.FirstName,
+            LastName = r.LastName,
+        });
+
+        return new PagedData<UserRecord>
+        {
+            TotalRecordCount = result.TotalRecordCount,
+            Data = userList,
+        };
     }
 
     // GET api/<UserController>/5
@@ -55,7 +55,7 @@ public class UserController : ControllerBase
     [HttpPost]
     public async Task PostAsync([FromBody] NewUserMessage newUser)
     {
-        User userDbObject = new User
+        User userDbObject = new()
         {
             Username = newUser.Username,
             FirstName = newUser.FirstName,

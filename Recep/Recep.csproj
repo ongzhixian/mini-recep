@@ -9,14 +9,18 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.1" />
-    <PackageReference Include="Mini.Common" Version="1.0.52" />
-    <PackageReference Include="Mini.Wms.DomainMessages" Version="1.0.7" />
-    <PackageReference Include="Mini.Wms.MongoDbImplementation" Version="1.0.14" />
+    <PackageReference Include="Mini.Common" Version="1.0.55" />
+    <PackageReference Include="Mini.Wms.DomainMessages" Version="1.0.9" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Extensions\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\mini-common\Mini.Wms.Abstraction\Mini.Wms.Abstraction.csproj" />
+    <ProjectReference Include="..\..\mini-common\Mini.Wms.MongoDbImplementation\Mini.Wms.MongoDbImplementation.csproj" />
   </ItemGroup>
 
 </Project>
