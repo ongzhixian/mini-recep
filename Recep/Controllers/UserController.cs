@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Mini.Wms.Abstraction.Models;
 using Mini.Wms.Abstraction.Services;
 using Mini.Wms.DomainMessages;
@@ -10,7 +11,7 @@ using Recep.Models;
 
 namespace Recep.Controllers;
 
-
+[AllowAnonymous]
 [Route("api/[controller]")]
 [ApiController]
 public class UserController : ControllerBase
