@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Mini.Wms.Abstraction.Models;
+using Mini.Common.Models;
 using Mini.Wms.Abstraction.Services;
 using Mini.Wms.DomainMessages;
-using Mini.Wms.MongoDbImplementation;
 using Mini.Wms.MongoDbImplementation.Models;
-using Recep.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -42,6 +40,8 @@ public class UserController : ControllerBase
         {
             TotalRecordCount = result.TotalRecordCount,
             Data = userList,
+            Page = pagedDataOptions.Page,
+            PageSize = pagedDataOptions.PageSize
         };
     }
 
